@@ -8,3 +8,11 @@ export interface Project {
     owner: string
     repo: string
 }
+
+export interface Timepart {
+    months: number
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+}

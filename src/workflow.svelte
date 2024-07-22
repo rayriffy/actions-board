@@ -1,15 +1,14 @@
 <script lang="ts">
     import { Octokit } from '@octokit/rest'
     import {onMount} from "svelte";
-    import dayjs from 'dayjs'
-    import relativeTime from 'dayjs/plugin/relativeTime'
     import {clsx} from "clsx";
+
+    import RelativeTime from "./relativeTime.svelte"
+
     import type {Project} from "./types";
 
     export let project: Project
     export let token: string
-
-    dayjs.extend(relativeTime);
 
     interface Workflows {
         id: number
@@ -19,6 +18,7 @@
 
     let polled = false
     let workflows: Workflows[] = []
+    let lastUpdated: string = new Date().toISOString()
 
     const octokit = new Octokit({
         auth: token
@@ -29,6 +29,7 @@
             owner: project.owner,
             repo: project.repo,
             per_page: 3,
+            // prevent cached requests
             headers: {
                 'If-None-Match': ''
             }
@@ -39,6 +40,7 @@
             status: workflow.status === 'completed' ? 'success' : ['cancelled', 'failure', 'timed_out'].includes(workflow.status ?? '') ? 'fail' : 'pend',
             updatedAt: workflow.updated_at
         }))
+        lastUpdated = new Date().toISOString()
         polled = true
     }
 
@@ -51,7 +53,10 @@
 </script>
 
 <section class="space-y-1">
-    <h2 class="text-gray-600 font-semibold text-xl">{project.name}</h2>
+    <div class="flex items-center justify-between">
+        <h2 class="text-gray-600 font-semibold text-xl">{project.name}</h2>
+        <p><RelativeTime timestamp={lastUpdated} /></p>
+    </div>
     <div class="flex space-x-4 items-center">
         <span class="flex relative h-3 w-3">
           <span class={clsx(
@@ -89,7 +94,9 @@
                 {/if}
                 {' '}#{workflow.id}
             </p>
-            <p>{dayjs(workflow.updatedAt).fromNow()}</p>
+            <p>
+                <RelativeTime timestamp={workflow.updatedAt} />
+            </p>
         </div>
     {/each}
 </section>
